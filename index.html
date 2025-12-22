@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -256,7 +256,9 @@
         z-index: 100;
       }
       .wheel-indicator-base {
-        width: 47.7px;
+        width: 6.8%;
+        min-width: 26px;
+        max-width: 48px;
         height: 14px;
         background: linear-gradient(to top, var(--gold-2), var(--gold-1), var(--gold-3));
         border-radius: 0 0 8px 8px;
@@ -312,12 +314,12 @@
         transform-style: preserve-3d;
       }
       .num { 
-        width: 48px;
-        height: 95px;
+        width: 6.8%;
+        height: 13.5%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 22px;
+        font-size: clamp(10px, 3vw, 22px);
         font-weight: 900;
         color: #fff;
         position: absolute;
@@ -692,11 +694,215 @@
       }
       .chat-input:focus { background: #131519; }
 
+      /* TABLET */
       @media (max-width: 1100px) {
-        .dashboard { grid-template-columns: 1fr; overflow-y: auto; }
-        .wheel-mask { width: 100%; max-width: 320px; margin: 0 auto; }
-        .wheel { width: 320px; height: 320px; top: -160px; }
-        .table-container { align-items: flex-start; } 
+        .dashboard { 
+          grid-template-columns: 1fr 1fr; 
+          overflow-y: auto; 
+        }
+        .left-column { display: none; }
+        .game-area { grid-column: 1 / -1; }
+        .right-column { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; }
+        .right-column .panel { flex: 1 1 300px; }
+        .top-players-full { grid-column: 1 / -1; height: 350px; }
+        .chat-extended { grid-column: 1 / -1; height: 300px; }
+        .wheel-stage { margin-top: -250px; }
+        .wheel-mask { 
+          width: 60vw; 
+          height: 60vw;
+          max-width: 500px;
+          max-height: 500px;
+        }
+      }
+      
+      /* MOBILE */
+      @media (max-width: 768px) {
+        /* Header mobile */
+        header {
+          height: auto;
+          min-height: 60px;
+          grid-template-columns: 1fr;
+          gap: 10px;
+          padding: 10px 12px;
+        }
+        .brand { justify-self: center; }
+        .brand svg { width: 32px; height: 32px; }
+        .brand-title { font-size: 14px; }
+        .brand-subtitle { font-size: 8px; }
+        .brand-text { display: none; }
+        .balance-main { 
+          justify-self: center; 
+          order: -1;
+          background: var(--bg-element);
+          padding: 8px 16px;
+          border-radius: 20px;
+          border: 1px solid rgba(255,255,255,0.1);
+        }
+        .balance-amount { font-size: 16px; }
+        .user-stats { 
+          justify-self: center; 
+          gap: 8px;
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+        .stat-box { 
+          padding: 6px 10px; 
+          height: auto !important;
+        }
+        .stat-box:has(#userAvatar) > div:last-child { display: none; }
+        #settingsBtn { font-size: 16px !important; }
+        
+        /* Dashboard mobile */
+        .dashboard {
+          grid-template-columns: 1fr;
+          gap: 12px;
+          padding: 12px;
+          overflow-y: auto;
+        }
+        .left-column { display: none; }
+        .game-area { grid-column: 1; }
+        .right-column { 
+          grid-column: 1; 
+          flex-direction: column;
+        }
+        .right-column .panel { flex: 0 0 auto; }
+        .top-players-full { 
+          grid-column: 1; 
+          height: 280px;
+        }
+        .chat-extended { 
+          grid-column: 1; 
+          height: 250px;
+        }
+        
+        /* Wheel mobile */
+        .wheel-stage { 
+          margin-top: -150px;
+          padding: 20px 10px;
+        }
+        .wheel-mask { 
+          width: 90vw; 
+          height: 90vw;
+          max-width: 350px;
+          max-height: 350px;
+        }
+        .wheel-indicator { bottom: -5px; }
+        .wheel-indicator-base { height: 10px; }
+        
+        /* Result overlay */
+        .result-text {
+          font-size: 28px;
+          padding: 12px 24px;
+        }
+        
+        /* Table mobile */
+        .table-container {
+          padding: 8px;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+        .table-layout {
+          grid-template-columns: 36px repeat(12, 32px) 36px;
+          gap: 3px;
+          min-width: max-content;
+        }
+        .cell {
+          height: 36px;
+          font-size: 11px;
+          border-radius: 8px;
+        }
+        .cell.c-dozen, .cell.c-simple { font-size: 9px; }
+        
+        /* Controls mobile */
+        .controls-body { padding: 10px; gap: 10px; }
+        .mode-toggle { margin-bottom: 4px; }
+        .mode-btn { padding: 8px; font-size: 11px; }
+        .bet-input { 
+          padding: 10px; 
+          font-size: 14px; 
+        }
+        .chips-area { 
+          grid-template-columns: repeat(5, 1fr); 
+          gap: 6px;
+        }
+        .chip-select { 
+          font-size: 10px; 
+        }
+        .chip-select::before { inset: 4px; }
+        .btn-big { 
+          padding: 14px; 
+          font-size: 14px; 
+        }
+        
+        /* Recent numbers */
+        .history-coins { 
+          grid-template-columns: repeat(5, 1fr); 
+          gap: 6px; 
+        }
+        .coin-slot { font-size: 10px; }
+        
+        /* Leaderboard mobile */
+        .leaderboard-header { 
+          grid-template-columns: 2fr 1fr 1fr 1fr; 
+          font-size: 8px;
+          padding: 6px 8px;
+        }
+        .leaderboard-header > div:nth-child(2),
+        .leaderboard-header > div:nth-child(4) { display: none; }
+        .leaderboard-row { 
+          grid-template-columns: 2fr 1fr 1fr 1fr; 
+          padding: 8px;
+          font-size: 10px;
+        }
+        .leaderboard-row > div:nth-child(2),
+        .leaderboard-row > div:nth-child(4) { display: none; }
+        
+        /* Chat mobile */
+        .chat-msgs { padding: 10px; font-size: 11px; }
+        .chat-row { padding: 6px; margin-bottom: 8px; }
+        
+        /* Panel headers */
+        .panel-head { padding: 10px 12px; font-size: 10px; }
+        .tabs .tab { padding: 10px 6px; font-size: 9px; }
+        
+        /* Total bet display */
+        .total-bet-display { padding: 8px 10px; }
+        .total-bet-value { font-size: 16px; }
+      }
+      
+      /* SMALL MOBILE */
+      @media (max-width: 380px) {
+        header { padding: 8px; }
+        .balance-main { padding: 6px 12px; }
+        .balance-amount { font-size: 14px; }
+        .stat-box { padding: 4px 8px; }
+        
+        .dashboard { padding: 8px; gap: 8px; }
+        
+        .wheel-stage { margin-top: -120px; }
+        .wheel-mask { 
+          width: 85vw; 
+          height: 85vw;
+          max-width: 280px;
+          max-height: 280px;
+        }
+        
+        .table-layout {
+          grid-template-columns: 30px repeat(12, 26px) 30px;
+          gap: 2px;
+        }
+        .cell { height: 30px; font-size: 10px; }
+        
+        .chips-area { gap: 4px; }
+        .chip-select { font-size: 9px; }
+      }
+      
+      /* Touch-friendly adjustments */
+      @media (hover: none) and (pointer: coarse) {
+        .cell { min-height: 44px; }
+        .chip-select { min-width: 44px; min-height: 44px; }
+        .btn-big { min-height: 48px; }
+        .stat-box { min-height: 44px; }
       }
       
       /* MODAL STYLES */
@@ -1096,6 +1302,59 @@
         0% { transform: scale(0); }
         100% { transform: scale(1); }
       }
+      
+      /* MODAL MOBILE */
+      @media (max-width: 768px) {
+        .modal-content {
+          width: 95%;
+          max-height: 90vh;
+          border-radius: 12px;
+        }
+        .modal-header { padding: 14px 16px; }
+        .modal-title { font-size: 16px; }
+        .modal-body { padding: 16px; }
+        
+        .avatar-grid {
+          grid-template-columns: repeat(4, 1fr);
+          gap: 12px;
+          max-height: 50vh;
+        }
+        .avatar-option { border-radius: 12px; }
+        
+        .settings-group { margin-bottom: 16px; }
+        .settings-input { padding: 10px 12px; font-size: 12px; }
+        .settings-buttons { gap: 8px; }
+        .modal-btn { padding: 10px; font-size: 11px; }
+        
+        .deposit-amounts {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 8px;
+        }
+        .deposit-amount-btn { padding: 12px; }
+        .deposit-amount-btn .amount { font-size: 16px; }
+        .deposit-amount-btn .bonus { font-size: 9px; }
+        
+        .payment-methods { grid-template-columns: 1fr; gap: 8px; }
+        .payment-method { padding: 12px; }
+        .payment-method-icon { width: 32px; height: 32px; font-size: 16px; }
+        
+        .card-input-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+        
+        .qr-placeholder { width: 160px; height: 160px; font-size: 60px; }
+        .pix-code { font-size: 10px; padding: 10px; }
+        
+        .deposit-summary { padding: 12px; }
+        .deposit-summary-row { font-size: 12px; }
+        
+        .processing-content { padding: 24px; }
+        .processing-spinner { width: 48px; height: 48px; }
+        .processing-text { font-size: 16px; }
+      }
+      
+      @media (max-width: 380px) {
+        .avatar-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .deposit-amounts { grid-template-columns: 1fr; }
+      }
     </style>
   </head>
   <body>
@@ -1118,7 +1377,7 @@
       </div>
         <div class="balance-main">
           <div class="balance-icon" id="btnAddFunds" style="cursor:pointer;transition:all 0.2s;" title="Add Funds">💰</div>
-          <span class="balance-amount" id="balance">R$ 1.000,00</span>
+          <span class="balance-amount" id="balance">$1,000.00</span>
         </div>
       <div class="user-stats">
         <div class="stat-box" id="btnConnect" style="padding:8px 12px;gap:10px;cursor:pointer;height:54px;">
@@ -1206,7 +1465,7 @@
           <!-- Total Bet Display -->
           <div class="total-bet-display" id="totalBetDisplay">
             <div class="total-bet-label">Total Bet on Table</div>
-            <div class="total-bet-value">R$ 0,00</div>
+            <div class="total-bet-value">$0.00</div>
           </div>
           
           <button class="btn-big" id="btnAction">Place Bet</button>
@@ -1290,7 +1549,7 @@
     const SEG = 360 / 37;
     
     // Carrega configurações salvas do localStorage
-    let WS_URL = localStorage.getItem('wsUrl') || "wss://ws-gw-qxtrdq.ekvjny.bra-s1.cloudhub.io/ws";
+    let WS_URL = localStorage.getItem('wsUrl') || "ws://ws-gw-qxtrdq.ekvjny.bra-s1.cloudhub.io/ws";
     let API_URL = localStorage.getItem('apiUrl') || "http://ws-gw-qxtrdq.ekvjny.bra-s1.cloudhub.io/api";
     
     // Gera lista de avatares dinamicamente (1-35)
@@ -1487,7 +1746,7 @@
       
       // Create all 37 numbers in full circular layout
       const anglePerPocket = 360 / 37;
-      const radius = 300; // Distance from center to number
+      const radiusPercent = 42.5; // Percentage of container size
       
       for(let i = 0; i < WHEEL.length; i++) {
         const n = WHEEL[i];
@@ -1509,14 +1768,14 @@
           cell.classList.add('black');
         }
         
-        // Calculate position using trigonometry
+        // Calculate position using trigonometry (percentages)
         const radians = (angle - 90) * (Math.PI / 180); // -90 so 0° is at top
-        const x = radius * Math.cos(radians);
-        const y = radius * Math.sin(radians);
+        const xPercent = radiusPercent * Math.cos(radians);
+        const yPercent = radiusPercent * Math.sin(radians);
         
-        // Position and rotate trapezoid
-        cell.style.left = `calc(50% + ${x}px)`;
-        cell.style.top = `calc(50% + ${y}px)`;
+        // Position using percentages for responsive sizing
+        cell.style.left = `calc(50% + ${xPercent}%)`;
+        cell.style.top = `calc(50% + ${yPercent}%)`;
         cell.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
         
         // Create inner span to rotate the number text only
@@ -1920,7 +2179,7 @@
           log('📨 WS:', msg.eventType || msg.status);
           
           if(msg.status === 'RECEIVED') { if(msg.newBalance !== undefined) { bal = msg.newBalance; updateUI(); } return; }
-          if(msg.status === 'ERROR' && msg.error === 'INSUFFICIENT_BALANCE') { alert(`Saldo insuficiente!\n\nSaldo atual: ${fmt(msg.currentBalance)}\nValor necessário: ${fmt(msg.requiredAmount)}`); spinning = false; updateUI(); return; }
+          if(msg.status === 'ERROR' && msg.error === 'INSUFFICIENT_BALANCE') { alert(`Insufficient balance!\n\nCurrent balance: ${fmt(msg.currentBalance)}\nRequired amount: ${fmt(msg.requiredAmount)}`); spinning = false; updateUI(); return; }
           if(msg.eventType === 'BALANCE_UPDATE') { bal = msg.balance; updateUI(); return; }
           if(msg.eventType === 'BALANCE_UPDATED') return;
           if(msg.eventType === 'ACTIVE_PLAYERS_UPDATE') { handleActivePlayersUpdate(msg); return; }
@@ -2358,14 +2617,14 @@
       
       const code = pixCode.textContent;
       navigator.clipboard.writeText(code).then(() => {
-        alert('✅ Código PIX copiado!\n\nCole no seu aplicativo de banco para finalizar o pagamento.');
+        alert('✅ PIX code copied!\n\nPaste it in your bank app to complete the payment.');
       }).catch(() => {
-        alert('❌ Erro ao copiar código. Por favor, copie manualmente.');
+        alert('❌ Error copying code. Please copy manually.');
       });
     }
     
     async function processDeposit() {
-      if(!selectedDepositAmount || !selectedPaymentMethod) { alert('Selecione valor e método'); return; }
+      if(!selectedDepositAmount || !selectedPaymentMethod) { alert('Please select amount and method'); return; }
       window.closeModal('depositModal');
       const overlay = $('processingOverlay'), content = $('processingContent');
       overlay.classList.add('active');
@@ -2374,10 +2633,10 @@
       bal += ta;
       if(ws && ws.readyState === 1) ws.send(JSON.stringify({eventType:'BALANCE_UPDATED',userId:pid,balance:bal,timestamp:new Date().toISOString()}));
       updateUI();
-      content.innerHTML = `<div class="success-checkmark">✓</div><div class="processing-text" style="color:#22c55e;">Depósito Aprovado!</div><div class="processing-subtext">Valor: ${fmt(selectedDepositAmount)}<br>Bônus: ${fmt(ba)}<br><strong style="color:#22c55e;font-size:16px;margin-top:8px;display:block;">Total: ${fmt(ta)}</strong></div>`;
+      content.innerHTML = `<div class="success-checkmark">✓</div><div class="processing-text" style="color:#22c55e;">Deposit Approved!</div><div class="processing-subtext">Amount: ${fmt(selectedDepositAmount)}<br>Bonus: ${fmt(ba)}<br><strong style="color:#22c55e;font-size:16px;margin-top:8px;display:block;">Total: ${fmt(ta)}</strong></div>`;
       await new Promise(r => setTimeout(r, 3000));
       overlay.classList.remove('active');
-      content.innerHTML = `<div class="processing-spinner"></div><div class="processing-text">Processando Pagamento...</div><div class="processing-subtext">Aguarde alguns instantes</div>`;
+      content.innerHTML = `<div class="processing-spinner"></div><div class="processing-text">Processing Payment...</div><div class="processing-subtext">Please wait a moment</div>`;
       initDepositModal();
     }
     
@@ -2445,7 +2704,7 @@
               placeholder="ws://localhost:8081/ws"
               required
             >
-            <div class="settings-hint">URL do servidor WebSocket (ex: ws://your-app.cloudhub.io/ws)</div>
+            <div class="settings-hint">WebSocket server URL (e.g., ws://your-app.cloudhub.io/ws)</div>
           </div>
           
           <div class="settings-group">
@@ -2456,7 +2715,7 @@
               id="apiUrlInput" 
               placeholder="http://localhost:8081/api"
             >
-            <div class="settings-hint">URL da API REST (se necessário)</div>
+            <div class="settings-hint">REST API URL (if needed)</div>
           </div>
           
           <div class="settings-group">
@@ -2466,9 +2725,9 @@
               id="soundEnabledCheckbox" 
               style="width:20px;height:20px;cursor:pointer;"
             >
-            <span>Habilitar Sons</span>
+            <span>Enable Sounds</span>
           </label>
-          <div class="settings-hint">Sons de tick durante a rotação da roleta</div>
+          <div class="settings-hint">Tick sounds during wheel rotation</div>
         </div>
         
         <div class="settings-buttons">
@@ -2488,98 +2747,98 @@
   <div class="modal-overlay" id="depositModal">
     <div class="modal-content" style="max-width: 500px;">
       <div class="modal-header">
-        <div class="modal-title">💰 Adicionar Fundos</div>
+        <div class="modal-title">💰 Add Funds</div>
         <button class="modal-close" onclick="closeModal('depositModal')">×</button>
       </div>
       <div class="modal-body">
-        <!-- Seleção de Valor -->
+        <!-- Amount Selection -->
         <div class="settings-group">
-          <label class="settings-label">Selecione o Valor</label>
+          <label class="settings-label">Select Amount</label>
           <div class="deposit-amounts">
             <div class="deposit-amount-btn" data-amount="100">
-              <span class="amount">R$ 100</span>
+              <span class="amount">$100</span>
             </div>
             <div class="deposit-amount-btn" data-amount="500">
-              <span class="amount">R$ 500</span>
-              <span class="bonus">+5% Bônus</span>
+              <span class="amount">$500</span>
+              <span class="bonus">+5% Bonus</span>
             </div>
             <div class="deposit-amount-btn" data-amount="1000">
-              <span class="amount">R$ 1.000</span>
-              <span class="bonus">+10% Bônus</span>
+              <span class="amount">$1,000</span>
+              <span class="bonus">+10% Bonus</span>
             </div>
             <div class="deposit-amount-btn" data-amount="2500">
-              <span class="amount">R$ 2.500</span>
-              <span class="bonus">+15% Bônus</span>
+              <span class="amount">$2,500</span>
+              <span class="bonus">+15% Bonus</span>
             </div>
             <div class="deposit-amount-btn" data-amount="5000">
-              <span class="amount">R$ 5.000</span>
-              <span class="bonus">+20% Bônus</span>
+              <span class="amount">$5,000</span>
+              <span class="bonus">+20% Bonus</span>
             </div>
             <div class="deposit-amount-btn" data-amount="10000">
-              <span class="amount">R$ 10.000</span>
-              <span class="bonus">+25% Bônus</span>
+              <span class="amount">$10,000</span>
+              <span class="bonus">+25% Bonus</span>
             </div>
           </div>
           
-          <!-- Valor Customizado -->
-          <label class="settings-label" style="margin-top: 12px;">Ou Digite um Valor</label>
+          <!-- Custom Amount -->
+          <label class="settings-label" style="margin-top: 12px;">Or Enter Custom Amount</label>
           <input 
             type="number" 
             class="settings-input" 
             id="customDepositAmount" 
-            placeholder="R$ 0,00"
+            placeholder="$0.00"
             min="10"
             step="10"
             style="text-align: center; font-size: 18px; font-weight: 700;"
           >
-          <div class="settings-hint">Depósito mínimo: R$ 10,00</div>
+          <div class="settings-hint">Minimum deposit: $10.00</div>
         </div>
         
-        <!-- Método de Pagamento -->
+        <!-- Payment Method -->
         <div class="settings-group">
-          <label class="settings-label">Método de Pagamento</label>
+          <label class="settings-label">Payment Method</label>
           <div class="payment-methods">
             <div class="payment-method" data-method="pix">
               <div class="payment-method-icon">🔷</div>
               <div class="payment-method-info">
                 <div class="payment-method-name">PIX</div>
-                <div class="payment-method-desc">Instantâneo</div>
+                <div class="payment-method-desc">Instant</div>
               </div>
             </div>
             <div class="payment-method" data-method="credit">
               <div class="payment-method-icon">💳</div>
               <div class="payment-method-info">
-                <div class="payment-method-name">Cartão de Crédito</div>
-                <div class="payment-method-desc">Aprovação rápida</div>
+                <div class="payment-method-name">Credit Card</div>
+                <div class="payment-method-desc">Quick approval</div>
               </div>
             </div>
             <div class="payment-method" data-method="debit">
               <div class="payment-method-icon">💳</div>
               <div class="payment-method-info">
-                <div class="payment-method-name">Cartão de Débito</div>
-                <div class="payment-method-desc">Débito imediato</div>
+                <div class="payment-method-name">Debit Card</div>
+                <div class="payment-method-desc">Immediate debit</div>
               </div>
             </div>
             <div class="payment-method" data-method="boleto">
               <div class="payment-method-icon">📄</div>
               <div class="payment-method-info">
-                <div class="payment-method-name">Boleto</div>
-                <div class="payment-method-desc">1-3 dias úteis</div>
+                <div class="payment-method-name">Bank Transfer</div>
+                <div class="payment-method-desc">1-3 business days</div>
               </div>
             </div>
           </div>
         </div>
         
-        <!-- Formulário de Cartão (escondido por padrão) -->
+        <!-- Card Form (hidden by default) -->
         <div class="card-form" id="cardForm">
           <div class="settings-group">
-            <label class="settings-label">Dados do Cartão</label>
+            <label class="settings-label">Card Details</label>
             <div class="card-input-group">
               <input 
                 type="text" 
                 class="settings-input" 
                 id="cardNumber" 
-                placeholder="Número do Cartão"
+                placeholder="Card Number"
                 maxlength="19"
               >
             </div>
@@ -2588,7 +2847,7 @@
                 type="text" 
                 class="settings-input" 
                 id="cardName" 
-                placeholder="Nome no Cartão"
+                placeholder="Name on Card"
               >
             </div>
             <div class="card-input-row">
@@ -2596,7 +2855,7 @@
                 type="text" 
                 class="settings-input" 
                 id="cardExpiry" 
-                placeholder="MM/AA"
+                placeholder="MM/YY"
                 maxlength="5"
               >
               <input 
@@ -2610,41 +2869,41 @@
           </div>
         </div>
         
-        <!-- QR Code PIX (escondido por padrão) -->
+        <!-- QR Code PIX (hidden by default) -->
         <div class="pix-qrcode" id="pixQRCode">
           <div class="qr-placeholder">📱</div>
-          <div class="settings-label" style="margin-bottom: 8px;">Escaneie o QR Code</div>
+          <div class="settings-label" style="margin-bottom: 8px;">Scan QR Code</div>
           <div class="pix-code" id="pixCode">
             00020126580014br.gov.bcb.pix0136a1b2c3d4-e5f6-7890-abcd-ef1234567890520400005303986540510.005802BR5913STRENGER CASINO6009SAO PAULO62070503***63041D3D
           </div>
           <button type="button" class="modal-btn modal-btn-secondary" onclick="copyPixCode()" style="width: 100%;">
-            📋 Copiar Código PIX
+            📋 Copy PIX Code
           </button>
         </div>
         
-        <!-- Resumo do Depósito -->
+        <!-- Deposit Summary -->
         <div class="deposit-summary" id="depositSummary" style="display:none;">
           <div class="deposit-summary-row">
-            <span class="deposit-summary-label">Valor do Depósito:</span>
-            <span class="deposit-summary-value" id="summaryAmount">R$ 0,00</span>
+            <span class="deposit-summary-label">Deposit Amount:</span>
+            <span class="deposit-summary-value" id="summaryAmount">$0.00</span>
           </div>
           <div class="deposit-summary-row">
-            <span class="deposit-summary-label">Bônus:</span>
-            <span class="deposit-summary-value" id="summaryBonus" style="color:#22c55e;">R$ 0,00</span>
+            <span class="deposit-summary-label">Bonus:</span>
+            <span class="deposit-summary-value" id="summaryBonus" style="color:#22c55e;">$0.00</span>
           </div>
           <div class="deposit-summary-row">
-            <span class="deposit-summary-label">Total a Receber:</span>
-            <span class="deposit-summary-value total" id="summaryTotal">R$ 0,00</span>
+            <span class="deposit-summary-label">Total to Receive:</span>
+            <span class="deposit-summary-value total" id="summaryTotal">$0.00</span>
           </div>
         </div>
         
-        <!-- Botões de Ação -->
+        <!-- Action Buttons -->
         <div class="settings-buttons">
           <button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal('depositModal')">
-            Cancelar
+            Cancel
           </button>
           <button type="button" class="modal-btn modal-btn-primary" id="btnConfirmDeposit" disabled>
-            Confirmar Depósito
+            Confirm Deposit
           </button>
         </div>
       </div>
@@ -2655,8 +2914,8 @@
   <div class="processing-overlay" id="processingOverlay">
     <div class="processing-content" id="processingContent">
       <div class="processing-spinner"></div>
-      <div class="processing-text">Processando Pagamento...</div>
-      <div class="processing-subtext">Aguarde alguns instantes</div>
+      <div class="processing-text">Processing Payment...</div>
+      <div class="processing-subtext">Please wait a moment</div>
     </div>
   </div>
 
