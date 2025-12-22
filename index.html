@@ -1444,6 +1444,9 @@
               <span>Min bet: $5</span>
               <span>Max bet: $10K</span>
             </div>
+            <div class="bet-hints" style="font-size:9px;color:#666;margin-top:4px;line-height:1.4;">
+              <span>💡 Right-click to remove • Double-click to clear cell</span>
+            </div>
           </div>
           
           <div>
@@ -1727,11 +1730,61 @@
       grid.appendChild(mkSpacer());
     }
 
+    let clickTimeout = null;
+    let pendingClick = null;
+    
     function mkCell(lbl, cls, k, v) {
       const d = document.createElement('div');
       d.className = `cell ${cls}`; d.textContent = lbl;
       d.dataset.k = k; d.dataset.v = v;
-      d.onclick = e => addBet(k, v, e.altKey?-1:1);
+      
+      // Left click: add bet (Ctrl/Cmd+click or Alt+click to remove)
+      // Uses timeout to distinguish from double-click
+      d.onclick = e => {
+        e.preventDefault();
+        
+        // If Ctrl/Cmd/Alt is held, remove immediately (no delay)
+        if(e.altKey || e.ctrlKey || e.metaKey) {
+          if(clickTimeout) { clearTimeout(clickTimeout); clickTimeout = null; }
+          addBet(k, v, -1);
+          return;
+        }
+        
+        // Single click with delay to detect double-click
+        if(clickTimeout) {
+          clearTimeout(clickTimeout);
+          clickTimeout = null;
+        }
+        
+        pendingClick = { k, v };
+        clickTimeout = setTimeout(() => {
+          if(pendingClick && pendingClick.k === k && pendingClick.v === v) {
+            addBet(k, v, 1);
+          }
+          pendingClick = null;
+          clickTimeout = null;
+        }, 200); // 200ms delay to detect double-click
+      };
+      
+      // Right click: remove chips
+      d.oncontextmenu = e => {
+        e.preventDefault();
+        addBet(k, v, -1);
+      };
+      
+      // Double click: clear this specific bet completely
+      d.ondblclick = e => {
+        e.preventDefault();
+        if(clickTimeout) { clearTimeout(clickTimeout); clickTimeout = null; }
+        pendingClick = null;
+        
+        const key = `${k}:${v}`;
+        if(bets.has(key)) {
+          bets.delete(key);
+          updateUI();
+        }
+      };
+      
       return d;
     }
     function mkSpacer() { const d=document.createElement('div'); d.className='spacer-zero'; return d; }
@@ -2293,10 +2346,10 @@
       if(!spinning) spin();
     };
     
-    // Chip selection
+    // Chip selection (skip btnClear - it has its own handler)
     document.querySelectorAll('.chip-select').forEach(c=>{
+      if(c.id==='btnClear') return; // Don't override btnClear's onclick
       c.onclick=()=>{
-        if(c.id==='btnClear')return;
         document.querySelectorAll('.chip-select').forEach(x=>x.classList.remove('active'));
         c.classList.add('active'); 
         chip=Number(c.dataset.val); 
