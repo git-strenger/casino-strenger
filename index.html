@@ -116,10 +116,63 @@
       .left-column {
         grid-column: 1;
         grid-row: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
         overflow: hidden;
       }
-      .left-column .panel {
-        height: 100%;
+      .left-column .panel:first-child {
+        flex: 1;
+        min-height: 0;
+      }
+      .chat-left-panel {
+        height: 220px;
+        flex-shrink: 0;
+      }
+      .chat-left-panel .panel-body {
+        display: flex;
+        flex-direction: column;
+      }
+      .chat-left-panel .chat-msgs {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 10px;
+      }
+      .ws-log-entry {
+        padding: 3px 6px;
+        border-radius: 4px;
+        word-break: break-all;
+        line-height: 1.3;
+        border-left: 2px solid transparent;
+      }
+      .ws-log-entry.ws-out {
+        background: rgba(34, 197, 94, 0.1);
+        border-left-color: #22c55e;
+        color: #4ade80;
+      }
+      .ws-log-entry.ws-in {
+        background: rgba(59, 130, 246, 0.1);
+        border-left-color: #3b82f6;
+        color: #60a5fa;
+      }
+      .ws-log-entry.ws-info {
+        background: rgba(156, 163, 175, 0.1);
+        border-left-color: #6b7280;
+        color: #9ca3af;
+      }
+      .ws-log-entry.ws-error {
+        background: rgba(239, 68, 68, 0.1);
+        border-left-color: #ef4444;
+        color: #f87171;
+      }
+      .ws-log-entry .ws-time {
+        color: #555;
+        margin-right: 6px;
+      }
+      .ws-log-entry .ws-direction {
+        font-weight: 700;
+        margin-right: 4px;
       }
       .game-area {
         grid-column: 2;
@@ -148,16 +201,19 @@
       .top-players-full .panel-body {
         overflow-y: auto;
       }
-      .chat-extended {
+      .ws-console-extended {
         grid-column: 3;
         grid-row: 2;
         height: 500px;
         display: flex;
         flex-direction: column;
       }
-      .chat-extended .panel-body {
+      .ws-console-extended .panel-body {
         flex: 1;
         min-height: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
       }
       .panel {
         background: var(--bg-panel); border-radius: 16px; border: 1px solid rgba(255,255,255,0.03);
@@ -701,11 +757,12 @@
           overflow-y: auto; 
         }
         .left-column { display: none; }
+        .chat-left-panel { display: none; }
         .game-area { grid-column: 1 / -1; }
         .right-column { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; }
         .right-column .panel { flex: 1 1 300px; }
         .top-players-full { grid-column: 1 / -1; height: 350px; }
-        .chat-extended { grid-column: 1 / -1; height: 300px; }
+        .ws-console-extended { grid-column: 1 / -1; height: 300px; }
         .wheel-stage { margin-top: -250px; }
         .wheel-mask { 
           width: 60vw; 
@@ -770,7 +827,7 @@
           grid-column: 1; 
           height: 280px;
         }
-        .chat-extended { 
+        .ws-console-extended { 
           grid-column: 1; 
           height: 250px;
         }
@@ -1399,10 +1456,29 @@
 
     <div class="dashboard">
       <div class="left-column">
-      <aside class="panel">
+        <aside class="panel" style="flex: 1; min-height: 0;">
         <div class="panel-head"><span>Active Players</span><span style="color:var(--accent)" id="playerCount">21</span></div>
         <div class="panel-body" id="playerList"></div>
       </aside>
+        
+        <aside class="panel chat-left-panel">
+          <div class="panel-head">
+            <span>Live Chat <span class="live-indicator" id="chatLiveDot" style="display:none;">● LIVE</span></span>
+            <span style="color:var(--accent)" id="chatViewers">0 👁</span>
+          </div>
+          <div class="panel-body" style="padding: 0; display: flex; flex-direction: column;">
+            <div class="chat-msgs" id="chatBox">
+              <div class="chat-row">
+                <div style="margin-bottom:4px"><span style="color:#60a5fa;font-weight:600">Daniel Allison</span> <span style="color:#555;font-size:9px;margin-left:6px">3:27 pm</span></div>
+                <span style="color:#d1d5db">Why does it seem like everyone's betting on black lol!</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;background:#0b0d10;border-top:1px solid #222;padding:8px 12px">
+              <input class="chat-input" placeholder="Say something..." style="border:none;padding:0;border-top:none;background:transparent;flex:1;">
+              <button class="chat-send-btn" style="background:var(--accent);border:none;color:#fff;width:32px;height:32px;border-radius:10px;cursor:pointer;font-size:16px;display:grid;place-items:center">➤</button>
+            </div>
+          </div>
+        </aside>
       </div>
 
       <section class="game-area">
@@ -1510,30 +1586,13 @@
         </div>
       </aside>
       
-      <aside class="panel chat-extended">
+      <aside class="panel ws-console-extended">
           <div class="panel-head">
-            <span>Live Chat <span class="live-indicator" id="chatLiveDot" style="display:none;">● LIVE</span></span>
-            <span style="color:var(--accent)" id="chatViewers">0 👁</span>
+            <span>WebSocket Console</span>
+            <button id="btnClearConsole" style="background:transparent;border:1px solid #333;color:#666;padding:2px 8px;border-radius:4px;font-size:9px;cursor:pointer;">Clear</button>
           </div>
-        <div class="panel-body" style="padding: 0; display: flex; flex-direction: column;">
-          <div class="chat-msgs" id="chatBox">
-            <div class="chat-row">
-              <div style="margin-bottom:4px"><span style="color:#60a5fa;font-weight:600">Daniel Allison</span> <span style="color:#555;font-size:9px;margin-left:6px">3:27 pm</span></div>
-              <span style="color:#d1d5db">Why does it seem like everyone's betting on black lol! My big chips are on reds, and it feels like my lucky day today 🎰💰</span>
-            </div>
-            <div class="chat-row">
-              <div style="margin-bottom:4px"><span style="color:#a78bfa;font-weight:600">Nwamaka Diana</span> <span style="color:#555;font-size:9px;margin-left:6px">3:28 pm</span></div>
-              <span style="color:#d1d5db">Lmao! You can't be so sure😂😂 It'd have been nicer if we could bet in stable coins 💰🔥</span>
-            </div>
-            <div class="chat-row">
-              <div style="margin-bottom:4px"><span style="color:#34d399;font-weight:600">Mario Francis</span> <span style="color:#555;font-size:9px;margin-left:6px">3:30 pm</span></div>
-              <span style="color:#d1d5db">defs loving the commVQUnity experience on this product!🔥</span>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;background:#0b0d10;border-top:1px solid #222;padding:8px 12px">
-            <input class="chat-input" placeholder="Say something..." style="border:none;padding:0;border-top:none;background:transparent">
-            <button style="background:var(--accent);border:none;color:#fff;width:32px;height:32px;border-radius:10px;cursor:pointer;font-size:16px;display:grid;place-items:center">➤</button>
-          </div>
+          <div class="panel-body" id="wsConsole" style="padding: 8px; overflow-y: auto; font-family: 'Monaco', 'Consolas', monospace; font-size: 10px; background: #0a0b0d;">
+            <div class="ws-log-entry ws-info">Console ready...</div>
         </div>
       </aside>
     </div>
@@ -1590,6 +1649,56 @@
     let autoSpinDelay = 2000; // Delay entre spins automáticos (2 segundos)
     let soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
     log('🔊 Sound:', soundEnabled);
+
+    // WebSocket Console logging
+    function wsLog(direction, data, type = 'info') {
+      const console = $('wsConsole');
+      if(!console) return;
+      
+      const entry = document.createElement('div');
+      const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      
+      let dirIcon = '';
+      let cssClass = 'ws-info';
+      
+      if(direction === 'out') {
+        dirIcon = '📤';
+        cssClass = 'ws-out';
+      } else if(direction === 'in') {
+        dirIcon = '📥';
+        cssClass = 'ws-in';
+      } else if(direction === 'error') {
+        dirIcon = '❌';
+        cssClass = 'ws-error';
+      } else {
+        dirIcon = 'ℹ️';
+      }
+      
+      // Full message (no truncation)
+      let displayData = typeof data === 'string' ? data : JSON.stringify(data, null, 0);
+      
+      entry.className = `ws-log-entry ${cssClass}`;
+      entry.innerHTML = `<span class="ws-time">${time}</span><span class="ws-direction">${dirIcon}</span>${displayData}`;
+      
+      console.appendChild(entry);
+      
+      // Keep only last 50 entries
+      while(console.children.length > 50) {
+        console.removeChild(console.firstChild);
+      }
+      
+      // Auto-scroll to bottom
+      console.scrollTop = console.scrollHeight;
+    }
+    
+    // Wrapper for ws.send to log outgoing messages
+    function wsSend(data) {
+      if(!ws || ws.readyState !== 1) return false;
+      const jsonData = typeof data === 'string' ? data : JSON.stringify(data);
+      wsLog('out', jsonData);
+      ws.send(jsonData);
+      return true;
+    }
 
     const playTick = () => {
       if(!soundEnabled) return;
@@ -1732,7 +1841,7 @@
 
     let clickTimeout = null;
     let pendingClick = null;
-    
+
     function mkCell(lbl, cls, k, v) {
       const d = document.createElement('div');
       d.className = `cell ${cls}`; d.textContent = lbl;
@@ -2027,7 +2136,7 @@
       };
       
       log('📤 Bet:', total);
-      ws.send(JSON.stringify(betData));
+      wsSend(betData);
       updateUI();
       
       // Timeout de segurança (30 segundos)
@@ -2166,10 +2275,8 @@
       
       updateUI();
       
-      // Envia atualização de saldo
-      if(ws && ws.readyState === 1) {
-        ws.send(JSON.stringify({eventType:'BALANCE_UPDATED',userId:pid,balance:bal,timestamp:new Date().toISOString()}));
-      }
+      // Send balance update
+      wsSend({eventType:'BALANCE_UPDATED',userId:pid,balance:bal,timestamp:new Date().toISOString()});
       
       // Destaca número vencedor na mesa
       const el = document.querySelector(`.cell[data-k="number"][data-v="${n}"]`);
@@ -2190,7 +2297,7 @@
       };
       
       addBetToLog(betResultData);
-      if(ws && ws.readyState === 1) ws.send(JSON.stringify(betResultData));
+      wsSend(betResultData);
       
       // AUTO MODE: Mantém apostas e agenda próximo spin
       if(autoMode) {
@@ -2214,22 +2321,33 @@
 
     function connect() {
       if(ws)ws.close(); $('connText').textContent='Connecting...';
+      wsLog('info', `Connecting to ${WS_URL}...`);
       ws=new WebSocket(`${WS_URL}?token=${pid}`);
       
       ws.onopen=()=>{ 
         $('dot').style.background='#22c55e'; 
         $('connText').textContent='Online';
         log('✅ Connected:', pid);
-        if(selectedAvatar) ws.send(JSON.stringify({eventType:'SET_AVATAR',userId:pid,avatar:selectedAvatar}));
+        wsLog('info', `Connected as ${pid}`);
+        if(selectedAvatar) wsSend({eventType:'SET_AVATAR',userId:pid,avatar:selectedAvatar});
       };
       
-      ws.onclose=()=>{ $('dot').style.background='#ef4444'; $('connText').textContent='Offline'; };
-      ws.onerror=()=>{ $('dot').style.background='#ef4444'; $('connText').textContent='Error'; };
+      ws.onclose=()=>{ 
+        $('dot').style.background='#ef4444'; 
+        $('connText').textContent='Offline'; 
+        wsLog('info', 'Disconnected');
+      };
+      ws.onerror=(e)=>{ 
+        $('dot').style.background='#ef4444'; 
+        $('connText').textContent='Error'; 
+        wsLog('error', 'Connection error');
+      };
       
       ws.onmessage=e=>{ 
         try {
           const msg = JSON.parse(e.data);
           log('📨 WS:', msg.eventType || msg.status);
+          wsLog('in', e.data);
           
           if(msg.status === 'RECEIVED') { if(msg.newBalance !== undefined) { bal = msg.newBalance; updateUI(); } return; }
           if(msg.status === 'ERROR' && msg.error === 'INSUFFICIENT_BALANCE') { alert(`Insufficient balance!\n\nCurrent balance: ${fmt(msg.currentBalance)}\nRequired amount: ${fmt(msg.requiredAmount)}`); spinning = false; updateUI(); return; }
@@ -2241,7 +2359,10 @@
           
           const isResult = msg.eventType === 'ROUND_RESULT' || msg.type === 'GAME_RESULT' || msg.number !== undefined || msg.resultNumber !== undefined || msg.winningNumber !== undefined;
           if(isResult) result(msg);
-        } catch(x) { logError('❌ Parse error:', x); }
+        } catch(x) { 
+          logError('❌ Parse error:', x); 
+          wsLog('error', `Parse error: ${x.message}`);
+        }
       };
     }
 
@@ -2424,7 +2545,7 @@
     function sendChatMessage(message) {
       if(!ws || ws.readyState !== 1) { alert('Not connected'); return; }
       if(!message || !message.trim()) return;
-      ws.send(JSON.stringify({eventType:'CHAT_MESSAGE',userId:pid,message:message.trim(),timestamp:new Date().toISOString()}));
+      wsSend({eventType:'CHAT_MESSAGE',userId:pid,message:message.trim(),timestamp:new Date().toISOString()});
     }
     
     function formatChatTime(timestamp) {
@@ -2562,6 +2683,12 @@
       else alert('Settings saved!');
     }
     
+    // Clear console button
+    $('btnClearConsole').onclick = () => {
+      const console = $('wsConsole');
+      console.innerHTML = '<div class="ws-log-entry ws-info">Console cleared</div>';
+    };
+    
     buildTable(); initWheel(); initCoinSlots(); updateUI();
     
     /* SAVE AVATAR AND USERNAME */
@@ -2578,12 +2705,12 @@
       updateUI();
       window.closeModal('avatarModal');
       if(usernameChanged) { setTimeout(() => { alert(`Profile updated!\n\nUsername: ${username}\n\nReconnecting...`); if(ws) { ws.close(); setTimeout(connect, 500); } }, 300); }
-      else if(ws && ws.readyState === 1) ws.send(JSON.stringify({eventType:'SET_AVATAR',userId:pid,avatar:selectedAvatar}));
+      else wsSend({eventType:'SET_AVATAR',userId:pid,avatar:selectedAvatar});
     }
     
     /* CHAT LISTENERS */
     const chatInput = document.querySelector('.chat-input');
-    const chatSendBtn = document.querySelector('.chat-extended button');
+    const chatSendBtn = document.querySelector('.chat-send-btn');
     if(chatSendBtn) chatSendBtn.onclick = () => { if(chatInput.value.trim()) { sendChatMessage(chatInput.value); chatInput.value = ''; } };
     if(chatInput) chatInput.onkeypress = e => { if(e.key === 'Enter' && chatInput.value.trim()) { sendChatMessage(chatInput.value); chatInput.value = ''; } };
     clearChatMessages();
@@ -2684,7 +2811,7 @@
       await new Promise(r => setTimeout(r, 2500));
       const bp = calcBonus(selectedDepositAmount), ba = (selectedDepositAmount * bp) / 100, ta = selectedDepositAmount + ba;
       bal += ta;
-      if(ws && ws.readyState === 1) ws.send(JSON.stringify({eventType:'BALANCE_UPDATED',userId:pid,balance:bal,timestamp:new Date().toISOString()}));
+      wsSend({eventType:'BALANCE_UPDATED',userId:pid,balance:bal,timestamp:new Date().toISOString()});
       updateUI();
       content.innerHTML = `<div class="success-checkmark">✓</div><div class="processing-text" style="color:#22c55e;">Deposit Approved!</div><div class="processing-subtext">Amount: ${fmt(selectedDepositAmount)}<br>Bonus: ${fmt(ba)}<br><strong style="color:#22c55e;font-size:16px;margin-top:8px;display:block;">Total: ${fmt(ta)}</strong></div>`;
       await new Promise(r => setTimeout(r, 3000));
@@ -2695,7 +2822,7 @@
     
     window.addEventListener('beforeunload', () => {
       if(ws && ws.readyState === WebSocket.OPEN) {
-        try { ws.send(JSON.stringify({eventType:'DISCONNECT',userId:pid,timestamp:new Date().toISOString()})); } catch(e) {}
+        try { wsSend({eventType:'DISCONNECT',userId:pid,timestamp:new Date().toISOString()}); } catch(e) {}
         ws.close(1000, 'Tab closing');
       }
     });
