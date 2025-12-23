@@ -7,7 +7,9 @@
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" as="style">
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" as="style">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
     <style>
       :root{
@@ -357,11 +359,6 @@
           0 15px 50px rgba(0,0,0,0.8);
         z-index: 0;
       }
-      /* Center hub - removed */
-      .pointer {
-        display: none;
-      }
-      /* Bolinha dourada acima da seta removida */
       .numbers { 
         position: absolute;
         width: 100%;
@@ -412,20 +409,6 @@
         z-index: 20;
         border-color: var(--gold-1);
         filter: brightness(1.7);
-      }
-      .pockets { 
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        border-radius: 50%;
-        pointer-events: none;
-      }
-      .pocket { 
-        display: none;
-      }
-      /* Bolinha removida - usando indicador fixo */
-      .ball { 
-        display: none;
       }
       
       /* WIN/LOSE Indicator in center of wheel */
@@ -1484,10 +1467,8 @@
       <section class="game-area">
         <div class="wheel-stage">
           <div class="wheel-mask">
-            <div class="pointer"></div>
             <div class="wheel" id="wheel">
               <div class="numbers" id="numbers"></div>
-              <div class="pockets" id="pockets"></div>
             </div>
             <!-- Indicador fixo em 6 horas -->
             <div class="wheel-indicator" id="wheelIndicator">
@@ -1599,7 +1580,15 @@
 
   <script>
   (() => {
-    /* STRENGER CASINO - ROULETTE FRONTEND */
+    /* STRENGER CASINO - ROULETTE FRONTEND 
+     * OPTIMIZATIONS APPLIED:
+     * - Removed unused CSS (.ball, .pointer, .pocket)
+     * - Event delegation for better performance
+     * - Debounce on input fields
+     * - Batch localStorage updates
+     * - Exponential backoff on WebSocket reconnect
+     * - Font preloading for faster initial render
+     */
     const DEBUG = false; // Set to true for verbose logging
     const log = (...args) => DEBUG && console.log(...args);
     const logError = (...args) => console.error(...args);
@@ -1612,7 +1601,7 @@
     
     // Carrega configurações salvas do localStorage
     let WS_URL = localStorage.getItem('wsUrl') || "wss://ws-gw-qxtrdq.ekvjny.bra-s1.cloudhub.io/ws";
-    let API_URL = localStorage.getItem('apiUrl') || "http://ws-gw-qxtrdq.ekvjny.bra-s1.cloudhub.io/api";
+    let API_URL = localStorage.getItem('apiUrl') || "https://ws-gw-qxtrdq.ekvjny.bra-s1.cloudhub.io/api";
     
     // Gera lista de avatares dinamicamente (1-35)
     const AVATARS = Array.from({length: 35}, (_, i) => `https://cdn.jsdelivr.net/gh/alohe/avatars/png/memo_${i+1}.png`);
@@ -1632,6 +1621,9 @@
     let ws=null, spinning=false, bal=0, chip=10, bets=new Map();
     let audioCtx=null, autoMode=false, spinTimeout=null, autoSpinTimeout=null;
     let betsLog = []; // Armazena histórico de apostas
+    let lastActivePlayersMsg = null; // Armazena último ACTIVE_PLAYERS_UPDATE para re-aplicar após animação
+    let reconnectDelay = 1000; // Exponential backoff para reconnect
+    let reconnectAttempts = 0; // Contador de tentativas de reconexão
     
     // Mapeamento de valor do chip para cor
     const chipColors = {
@@ -1904,7 +1896,6 @@
 
     function initWheel() {
       const container = $('numbers');
-      const pocketsContainer = $('pockets');
       
       // Create all 37 numbers in full circular layout
       const anglePerPocket = 360 / 37;
@@ -1949,12 +1940,6 @@
         cell.appendChild(numberSpan);
         
         container.appendChild(cell);
-        
-        // Create divider line between pockets
-        const line = document.createElement('div');
-        line.className = 'pocket';
-        line.style.transform = `rotate(${angle}deg)`;
-        pocketsContainer.appendChild(line);
       }
     }
 
@@ -2174,6 +2159,9 @@
       if(n === undefined || n === null || isNaN(n)) n = WHEEL[Math.floor(Math.random() * WHEEL.length)];
       log('🎲 Result:', n, 'Win:', m.win);
       
+      // NÃO atualiza balance aqui - espera animação terminar para não dar spoiler
+      // O balance será atualizado em finish() após a animação
+      
       // Envia comando para parar no número vencedor
       stopWheelAt(n);
       
@@ -2275,8 +2263,11 @@
       
       updateUI();
       
-      // Send balance update
-      wsSend({eventType:'BALANCE_UPDATED',userId:pid,balance:bal,timestamp:new Date().toISOString()});
+      // Re-aplica último ACTIVE_PLAYERS_UPDATE agora que spinning = false
+      // Isso sincroniza o feed com o valor correto do servidor
+      if(lastActivePlayersMsg) {
+        handleActivePlayersUpdate(lastActivePlayersMsg);
+      }
       
       // Destaca número vencedor na mesa
       const el = document.querySelector(`.cell[data-k="number"][data-v="${n}"]`);
@@ -2329,13 +2320,24 @@
         $('connText').textContent='Online';
         log('✅ Connected:', pid);
         wsLog('info', `Connected as ${pid}`);
+        // Reset reconnect delay após conexão bem-sucedida
+        reconnectDelay = 1000;
+        reconnectAttempts = 0;
         if(selectedAvatar) wsSend({eventType:'SET_AVATAR',userId:pid,avatar:selectedAvatar});
       };
       
-      ws.onclose=()=>{ 
+      ws.onclose=(e)=>{ 
         $('dot').style.background='#ef4444'; 
         $('connText').textContent='Offline'; 
         wsLog('info', 'Disconnected');
+        
+        // Reconecta automaticamente com exponential backoff
+        if(e.code !== 1000) { // 1000 = normal closure
+          reconnectAttempts++;
+          const delay = Math.min(reconnectDelay * Math.pow(2, reconnectAttempts - 1), 30000); // máx 30s
+          wsLog('info', `Reconnecting in ${delay/1000}s (attempt ${reconnectAttempts})...`);
+          setTimeout(connect, delay);
+        }
       };
       ws.onerror=(e)=>{ 
         $('dot').style.background='#ef4444'; 
@@ -2467,19 +2469,25 @@
       if(!spinning) spin();
     };
     
-    // Chip selection (skip btnClear - it has its own handler)
-    document.querySelectorAll('.chip-select').forEach(c=>{
-      if(c.id==='btnClear') return; // Don't override btnClear's onclick
-      c.onclick=()=>{
-        document.querySelectorAll('.chip-select').forEach(x=>x.classList.remove('active'));
-        c.classList.add('active'); 
-        chip=Number(c.dataset.val); 
-        $('betInput').value=chip;
+    // Event delegation para chip selection
+    const chipsArea = document.querySelector('.chips-area');
+    if(chipsArea) {
+      chipsArea.onclick = e => {
+        const c = e.target.closest('.chip-select');
+        if(c && c.id !== 'btnClear' && c.dataset.val) {
+          document.querySelectorAll('.chip-select').forEach(x=>x.classList.remove('active'));
+          c.classList.add('active'); 
+          chip=Number(c.dataset.val); 
+          $('betInput').value=chip;
+        }
       };
-    });
+    }
 
     /* ACTIVE PLAYERS */
     function handleActivePlayersUpdate(msg) {
+      // Armazena última mensagem para re-aplicar após animação terminar
+      lastActivePlayersMsg = msg;
+      
       const activeCount = msg.activeCount || msg.count || 0;
       const players = msg.players || msg.activePlayers || [];
       $('chatViewers').textContent = `${activeCount} 👁`;
@@ -2497,8 +2505,20 @@
         const userColor = getUserColor(p.userId);
         let avatarContent = p.avatar && p.avatar.startsWith('http') ? `<img src="${p.avatar}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">` : p.avatar || (displayName || 'U')[0].toUpperCase();
         let playerBalance = '—', balanceColor = '#666';
-        if(p.balance !== undefined && p.balance !== null) { playerBalance = fmt(p.balance); balanceColor = p.balance > 0 ? '#cfb53b' : '#ef4444'; }
-        else if(p.userId === pid && bal > 0) { playerBalance = fmt(bal); balanceColor = '#cfb53b'; }
+        
+        // NO SPOILER: Se for o próprio usuário E estiver spinning, usa o balance local
+        // Isso evita revelar o resultado antes da animação terminar
+        if(p.userId === pid && spinning) {
+          playerBalance = fmt(bal);
+          balanceColor = bal > 0 ? '#cfb53b' : '#ef4444';
+        } else if(p.balance !== undefined && p.balance !== null) { 
+          playerBalance = fmt(p.balance); 
+          balanceColor = p.balance > 0 ? '#cfb53b' : '#ef4444'; 
+        } else if(p.userId === pid && bal > 0) { 
+          playerBalance = fmt(bal); 
+          balanceColor = '#cfb53b'; 
+        }
+        
         d.innerHTML = `<div class="avatar" style="background:${userColor};color:#fff;${!p.avatar || !p.avatar.startsWith('http') ? 'font-size:14px;' : 'padding:2px;'}">${avatarContent}</div><div style="flex:1"><div class="p-name">${displayName}</div><div style="color:#555;font-size:10px;"><span style="color:#22c55e;">● </span>Online</div></div><div class="p-win" style="font-size:11px;color:${balanceColor};">${playerBalance}</div>`;
         pl.appendChild(d);
       });
@@ -2674,9 +2694,11 @@
       const newApiUrl = $('apiUrlInput').value.trim();
       const newSoundEnabled = $('soundEnabledCheckbox').checked;
       if(!newWsUrl || (!newWsUrl.startsWith('ws://') && !newWsUrl.startsWith('wss://'))) { alert('Invalid WS URL'); return; }
-      localStorage.setItem('wsUrl', newWsUrl);
-      localStorage.setItem('apiUrl', newApiUrl);
-      localStorage.setItem('soundEnabled', newSoundEnabled ? 'true' : 'false');
+      
+      // Batch localStorage updates
+      const settings = { wsUrl: newWsUrl, apiUrl: newApiUrl, soundEnabled: newSoundEnabled ? 'true' : 'false' };
+      Object.entries(settings).forEach(([key, value]) => localStorage.setItem(key, value));
+      
       WS_URL = newWsUrl; API_URL = newApiUrl; soundEnabled = newSoundEnabled;
       window.closeModal('settingsModal');
       if(ws) { alert('Settings saved! Reconnecting...'); ws.close(); setTimeout(connect, 500); }
@@ -2736,29 +2758,54 @@
     }
     
     function setupDepositListeners() {
-      document.querySelectorAll('.deposit-amount-btn').forEach(btn => {
-        btn.onclick = () => {
-          selectedDepositAmount = Number(btn.dataset.amount);
-          document.querySelectorAll('.deposit-amount-btn').forEach(b => b.classList.remove('selected'));
-          btn.classList.add('selected');
-          const ci = $('customDepositAmount'); if(ci) ci.value = '';
-          updateDepositSummary();
+      // Event delegation para deposit amounts
+      const depositAmountsContainer = document.querySelector('.deposit-amounts');
+      if(depositAmountsContainer) {
+        depositAmountsContainer.onclick = e => {
+          const btn = e.target.closest('.deposit-amount-btn');
+          if(btn) {
+            selectedDepositAmount = Number(btn.dataset.amount);
+            document.querySelectorAll('.deposit-amount-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            const ci = $('customDepositAmount'); if(ci) ci.value = '';
+            updateDepositSummary();
+          }
         };
-      });
+      }
+      
+      // Debounce no custom input
       const customInput = $('customDepositAmount');
-      if(customInput) customInput.oninput = e => { const a = Number(e.target.value); selectedDepositAmount = a >= 10 ? a : 0; if(a >= 10) document.querySelectorAll('.deposit-amount-btn').forEach(b => b.classList.remove('selected')); updateDepositSummary(); };
-      document.querySelectorAll('.payment-method').forEach(btn => {
-        btn.onclick = () => {
-          selectedPaymentMethod = btn.dataset.method;
-          document.querySelectorAll('.payment-method').forEach(b => b.classList.remove('selected'));
-          btn.classList.add('selected');
-          const cf = $('cardForm'), pq = $('pixQRCode');
-          if(cf) cf.classList.remove('active'); if(pq) pq.classList.remove('active');
-          if(selectedPaymentMethod === 'credit' || selectedPaymentMethod === 'debit') { if(cf) cf.classList.add('active'); }
-          else if(selectedPaymentMethod === 'pix' && pq) { pq.classList.add('active'); const pc = $('pixCode'); if(pc) pc.textContent = generatePixCode(); }
-          updateDepositSummary();
+      let debounceTimer;
+      if(customInput) {
+        customInput.oninput = e => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            const a = Number(e.target.value);
+            selectedDepositAmount = a >= 10 ? a : 0;
+            if(a >= 10) document.querySelectorAll('.deposit-amount-btn').forEach(b => b.classList.remove('selected'));
+            updateDepositSummary();
+          }, 300);
         };
-      });
+      }
+      
+      // Event delegation para payment methods
+      const paymentMethodsContainer = document.querySelector('.payment-methods');
+      if(paymentMethodsContainer) {
+        paymentMethodsContainer.onclick = e => {
+          const btn = e.target.closest('.payment-method');
+          if(btn) {
+            selectedPaymentMethod = btn.dataset.method;
+            document.querySelectorAll('.payment-method').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            const cf = $('cardForm'), pq = $('pixQRCode');
+            if(cf) cf.classList.remove('active'); if(pq) pq.classList.remove('active');
+            if(selectedPaymentMethod === 'credit' || selectedPaymentMethod === 'debit') { if(cf) cf.classList.add('active'); }
+            else if(selectedPaymentMethod === 'pix' && pq) { pq.classList.add('active'); const pc = $('pixCode'); if(pc) pc.textContent = generatePixCode(); }
+            updateDepositSummary();
+          }
+        };
+      }
+      
       const confirmBtn = $('btnConfirmDeposit'); if(confirmBtn) confirmBtn.onclick = processDeposit;
       const cardNum = $('cardNumber'); if(cardNum) cardNum.oninput = e => { let v = e.target.value.replace(/\s/g, ''); e.target.value = v.match(/.{1,4}/g)?.join(' ') || v; };
       const cardExp = $('cardExpiry'); if(cardExp) cardExp.oninput = e => { let v = e.target.value.replace(/\D/g, ''); if(v.length >= 2) v = v.slice(0,2) + '/' + v.slice(2,4); e.target.value = v; };
@@ -2811,7 +2858,6 @@
       await new Promise(r => setTimeout(r, 2500));
       const bp = calcBonus(selectedDepositAmount), ba = (selectedDepositAmount * bp) / 100, ta = selectedDepositAmount + ba;
       bal += ta;
-      wsSend({eventType:'BALANCE_UPDATED',userId:pid,balance:bal,timestamp:new Date().toISOString()});
       updateUI();
       content.innerHTML = `<div class="success-checkmark">✓</div><div class="processing-text" style="color:#22c55e;">Deposit Approved!</div><div class="processing-subtext">Amount: ${fmt(selectedDepositAmount)}<br>Bonus: ${fmt(ba)}<br><strong style="color:#22c55e;font-size:16px;margin-top:8px;display:block;">Total: ${fmt(ta)}</strong></div>`;
       await new Promise(r => setTimeout(r, 3000));
